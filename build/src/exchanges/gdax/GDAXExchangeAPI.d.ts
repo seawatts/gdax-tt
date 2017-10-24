@@ -87,7 +87,6 @@ export declare class GDAXExchangeAPI implements PublicExchangeAPI, Authenticated
     loadBalances(): Promise<Balances>;
     authCall(method: string, path: string, opts: AuthCallOptions): Promise<Response>;
     getSignature(method: string, relativeURI: string, body: string): AuthHeaders;
-    handleResponse<T>(req: Promise<Response>, meta: any): Promise<T>;
     checkAuth(): Promise<GDAXAuthConfig>;
     private buildBook(body);
     private loadNextOrders(product, after);

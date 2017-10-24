@@ -16,6 +16,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const BookBuilder_1 = require("../../lib/BookBuilder");
 const types_1 = require("../../lib/types");
 const Logger_1 = require("../../utils/Logger");
+const utils_1 = require("../utils");
 const request = require("superagent");
 const querystring = require("querystring");
 const crypto = require("crypto");
@@ -153,7 +154,7 @@ class GDAXExchangeAPI {
             funds: order.funds
         };
         const apiCall = this.authCall('POST', '/orders', { body: gdaxOrder });
-        return this.handleResponse(apiCall, { order: order })
+        return utils_1.handleResponse(apiCall, { order: order })
             .then((result) => {
             return GDAXOrderToOrder(result);
         }, (err) => {
@@ -163,20 +164,20 @@ class GDAXExchangeAPI {
     }
     cancelOrder(id) {
         const apiCall = this.authCall('DELETE', `/orders/${id}`, {});
-        return this.handleResponse(apiCall, { order_id: id }).then((ids) => {
+        return utils_1.handleResponse(apiCall, { order_id: id }).then((ids) => {
             return Promise.resolve(ids[0]);
         });
     }
     cancelAllOrders(product) {
         const apiCall = this.authCall('DELETE', `/orders`, {});
         const options = product ? { product_id: product } : null;
-        return this.handleResponse(apiCall, options).then((ids) => {
+        return utils_1.handleResponse(apiCall, options).then((ids) => {
             return Promise.resolve(ids);
         });
     }
     loadOrder(id) {
         const apiCall = this.authCall('GET', `/orders/${id}`, {});
-        return this.handleResponse(apiCall, { order_id: id }).then((order) => {
+        return utils_1.handleResponse(apiCall, { order_id: id }).then((order) => {
             return GDAXOrderToOrder(order);
         });
     }
@@ -203,7 +204,7 @@ class GDAXExchangeAPI {
     }
     loadBalances() {
         const apiCall = this.authCall('GET', '/accounts', {});
-        return this.handleResponse(apiCall, {}).then((accounts) => {
+        return utils_1.handleResponse(apiCall, {}).then((accounts) => {
             const balances = {};
             accounts.forEach((account) => {
                 if (!balances[account.profile_id]) {
@@ -254,22 +255,6 @@ class GDAXExchangeAPI {
             'CB-ACCESS-TIMESTAMP': timestamp,
             'CB-ACCESS-PASSPHRASE': this.auth.passphrase
         };
-    }
-    handleResponse(req, meta) {
-        // then<T> is required to workaround bug in TS2.1 https://github.com/Microsoft/TypeScript/issues/10977
-        return req.then((res) => {
-            if (res.status >= 200 && res.status < 300) {
-                return Promise.resolve(res.body);
-            }
-            const err = new Error(res.body.message);
-            err.details = res.body;
-            return Promise.reject(err);
-        }).catch((err) => {
-            const reason = err.message;
-            const error = Object.assign(new Error('A GDAX API request failed. ' + reason), meta);
-            error.reason = reason;
-            return Promise.reject(error);
-        });
     }
     checkAuth() {
         return new Promise((resolve, reject) => {

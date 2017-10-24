@@ -21,6 +21,7 @@ import { Big, BigJS, ZERO } from '../../lib/types';
 import { ConsoleLoggerFactory, Logger } from '../../utils/Logger';
 import { PlaceOrderMessage } from '../../core/Messages';
 import { Level3Order, LiveOrder } from '../../lib/Orderbook';
+import { handleResponse } from '../utils';
 import request = require('superagent');
 import querystring = require('querystring');
 import crypto = require('crypto');
@@ -227,7 +228,7 @@ export class GDAXExchangeAPI implements PublicExchangeAPI, AuthenticatedExchange
             funds: order.funds
         };
         const apiCall = this.authCall('POST', '/orders', { body: gdaxOrder });
-        return this.handleResponse<GDAXOrder>(apiCall, { order: order })
+        return handleResponse<GDAXOrder>(apiCall, { order: order })
             .then((result: GDAXOrder) => {
                 return GDAXOrderToOrder(result);
             }, (err: Error) => {
@@ -238,7 +239,7 @@ export class GDAXExchangeAPI implements PublicExchangeAPI, AuthenticatedExchange
 
     cancelOrder(id: string): Promise<string> {
         const apiCall = this.authCall('DELETE', `/orders/${id}`, {});
-        return this.handleResponse<string[]>(apiCall, { order_id: id }).then((ids: string[]) => {
+        return handleResponse<string[]>(apiCall, { order_id: id }).then((ids: string[]) => {
             return Promise.resolve(ids[0]);
         });
 
@@ -247,14 +248,14 @@ export class GDAXExchangeAPI implements PublicExchangeAPI, AuthenticatedExchange
     cancelAllOrders(product: string): Promise<string[]> {
         const apiCall = this.authCall('DELETE', `/orders`, {});
         const options = product ? { product_id: product } : null;
-        return this.handleResponse<string[]>(apiCall, options).then((ids: string[]) => {
+        return handleResponse<string[]>(apiCall, options).then((ids: string[]) => {
             return Promise.resolve(ids);
         });
     }
 
     loadOrder(id: string): Promise<LiveOrder> {
         const apiCall = this.authCall('GET', `/orders/${id}`, {});
-        return this.handleResponse<GDAXOrder>(apiCall, { order_id: id }).then((order: GDAXOrder) => {
+        return handleResponse<GDAXOrder>(apiCall, { order_id: id }).then((order: GDAXOrder) => {
             return GDAXOrderToOrder(order);
         });
     }
@@ -282,7 +283,7 @@ export class GDAXExchangeAPI implements PublicExchangeAPI, AuthenticatedExchange
 
     loadBalances(): Promise<Balances> {
         const apiCall = this.authCall('GET', '/accounts', {});
-        return this.handleResponse<GDAXAccountResponse[]>(apiCall, {}).then((accounts: GDAXAccountResponse[]) => {
+        return handleResponse<GDAXAccountResponse[]>(apiCall, {}).then((accounts: GDAXAccountResponse[]) => {
             const balances: Balances = {};
             accounts.forEach((account: GDAXAccountResponse) => {
                 if (!balances[account.profile_id]) {
@@ -334,23 +335,6 @@ export class GDAXExchangeAPI implements PublicExchangeAPI, AuthenticatedExchange
             'CB-ACCESS-TIMESTAMP': timestamp,
             'CB-ACCESS-PASSPHRASE': this.auth.passphrase
         };
-    }
-
-    handleResponse<T>(req: Promise<Response>, meta: any): Promise<T> {
-        // then<T> is required to workaround bug in TS2.1 https://github.com/Microsoft/TypeScript/issues/10977
-        return req.then<T>((res: Response) => {
-            if (res.status >= 200 && res.status < 300) {
-                return Promise.resolve<T>(res.body as T);
-            }
-            const err: Error = new Error(res.body.message);
-            (err as any).details = res.body;
-            return Promise.reject(err);
-        }).catch((err) => {
-            const reason: any = err.message;
-            const error: any = Object.assign(new Error('A GDAX API request failed. ' + reason), meta);
-            error.reason = reason;
-            return Promise.reject(error);
-        });
     }
 
     checkAuth(): Promise<GDAXAuthConfig> {

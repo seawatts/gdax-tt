@@ -14,6 +14,7 @@
  ***************************************************************************************************************************/
 Object.defineProperty(exports, "__esModule", { value: true });
 const types_1 = require("../lib/types");
+const utils_1 = require("../exchanges/utils");
 const gdaxFactories_1 = require("../factories/gdaxFactories");
 const gdax = gdaxFactories_1.DefaultAPI(null);
 const product = 'BTC-USD';
@@ -41,11 +42,11 @@ gdax.loadAllOrders(product).then((orders) => {
         total = total.plus(o.size);
     });
     console.log(`You have ${orders.length} orders on the book for a total of ${total.toFixed(1)} BTC`);
-    return gdax.handleResponse(gdax.authCall('GET', '/users/self', {}), {});
+    return utils_1.handleResponse(gdax.authCall('GET', '/users/self', {}), {});
 }).then((result) => {
     console.log('Self');
     console.log(JSON.stringify(result));
-    return gdax.handleResponse(gdax.authCall('GET', '/users/self/verify', {}), {});
+    return utils_1.handleResponse(gdax.authCall('GET', '/users/self/verify', {}), {});
 }).then((result) => {
     console.log('Self verify');
     console.log(JSON.stringify(result));
