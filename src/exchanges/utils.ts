@@ -17,6 +17,36 @@ import crypto = require('crypto');
 import Response = request.Response;
 import { ExchangeAuthConfig } from './AuthConfig';
 
+export class ExtendedError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = this.constructor.name;
+        this.message = message;
+        if (typeof Error.captureStackTrace === 'function') {
+            Error.captureStackTrace(this, this.constructor);
+        } else {
+            this.stack = (new Error(message)).stack;
+        }
+    }
+}
+
+export class RethrownError extends ExtendedError {
+    original: Error;
+    newStack: string;
+
+    constructor(message: string, error: Error) {
+        super(message);
+        if (!error) {
+            throw new Error('RethrownError requires a message and error');
+        }
+        this.original = error;
+        this.newStack = this.stack;
+        const messageLines = (this.message.match(/\n/g) || []).length + 1;
+        this.stack = this.stack.split('\n').slice(0, messageLines + 1).join('\n') + '\n' +
+            error.stack;
+    }
+}
+
 /**
  * A generic API response handler.
  * @param req A superagent request object
@@ -33,10 +63,9 @@ export async function handleResponse<T>(req: Promise<Response>, meta: any): Prom
         err.details = res.body;
         throw err;
     } catch (err) {
-        const reason: any = err.details.message;
-        const error: any = Object.assign(new Error('An API request failed. ' + reason), meta);
-        error.reason = reason;
-        return error;
+        err.meta = meta;
+        const reason = err.response.body.message;
+        throw new RethrownError(`An API request failed. HTTP ${err.status} ${reason}`, err);
     }
 }
 

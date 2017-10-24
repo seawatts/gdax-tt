@@ -15,6 +15,14 @@
 import request = require('superagent');
 import Response = request.Response;
 import { ExchangeAuthConfig } from './AuthConfig';
+export declare class ExtendedError extends Error {
+    constructor(message: string);
+}
+export declare class RethrownError extends ExtendedError {
+    original: Error;
+    newStack: string;
+    constructor(message: string, error: Error);
+}
 /**
  * A generic API response handler.
  * @param req A superagent request object

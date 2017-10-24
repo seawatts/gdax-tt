@@ -22,6 +22,34 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const crypto = require("crypto");
+class ExtendedError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = this.constructor.name;
+        this.message = message;
+        if (typeof Error.captureStackTrace === 'function') {
+            Error.captureStackTrace(this, this.constructor);
+        }
+        else {
+            this.stack = (new Error(message)).stack;
+        }
+    }
+}
+exports.ExtendedError = ExtendedError;
+class RethrownError extends ExtendedError {
+    constructor(message, error) {
+        super(message);
+        if (!error) {
+            throw new Error('RethrownError requires a message and error');
+        }
+        this.original = error;
+        this.newStack = this.stack;
+        const messageLines = (this.message.match(/\n/g) || []).length + 1;
+        this.stack = this.stack.split('\n').slice(0, messageLines + 1).join('\n') + '\n' +
+            error.stack;
+    }
+}
+exports.RethrownError = RethrownError;
 /**
  * A generic API response handler.
  * @param req A superagent request object
@@ -40,10 +68,9 @@ function handleResponse(req, meta) {
             throw err;
         }
         catch (err) {
-            const reason = err.details.message;
-            const error = Object.assign(new Error('An API request failed. ' + reason), meta);
-            error.reason = reason;
-            return error;
+            err.meta = meta;
+            const reason = err.response.body.message;
+            throw new RethrownError(`An API request failed. HTTP ${err.status} ${reason}`, err);
         }
     });
 }
