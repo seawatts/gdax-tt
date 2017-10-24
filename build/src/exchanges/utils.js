@@ -36,11 +36,12 @@ class ExtendedError extends Error {
     }
 }
 exports.ExtendedError = ExtendedError;
-class RethrownError extends ExtendedError {
+class APIError extends ExtendedError {
     constructor(message, error) {
         super(message);
+        this.name = 'API Error';
         if (!error) {
-            throw new Error('RethrownError requires a message and error');
+            throw new Error('APIError requires a message and error');
         }
         this.original = error;
         this.newStack = this.stack;
@@ -49,7 +50,7 @@ class RethrownError extends ExtendedError {
             error.stack;
     }
 }
-exports.RethrownError = RethrownError;
+exports.APIError = APIError;
 /**
  * A generic API response handler.
  * @param req A superagent request object
@@ -70,7 +71,7 @@ function handleResponse(req, meta) {
         catch (err) {
             err.meta = meta;
             const reason = err.response.body.message;
-            throw new RethrownError(`An API request failed. HTTP: ${err.status} - ${reason}`, err);
+            throw new APIError(`HTTP: ${err.status} - ${reason}`, err);
         }
     });
 }

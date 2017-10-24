@@ -30,14 +30,15 @@ export class ExtendedError extends Error {
     }
 }
 
-export class RethrownError extends ExtendedError {
+export class APIError extends ExtendedError {
     original: Error;
     newStack: string;
 
     constructor(message: string, error: Error) {
         super(message);
+        this.name = 'API Error';
         if (!error) {
-            throw new Error('RethrownError requires a message and error');
+            throw new Error('APIError requires a message and error');
         }
         this.original = error;
         this.newStack = this.stack;
@@ -65,7 +66,7 @@ export async function handleResponse<T>(req: Promise<Response>, meta: any): Prom
     } catch (err) {
         err.meta = meta;
         const reason = err.response.body.message;
-        throw new RethrownError(`An API request failed. HTTP: ${err.status} - ${reason}`, err);
+        throw new APIError(`HTTP: ${err.status} - ${reason}`, err);
     }
 }
 

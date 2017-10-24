@@ -18,7 +18,7 @@ import { ExchangeAuthConfig } from './AuthConfig';
 export declare class ExtendedError extends Error {
     constructor(message: string);
 }
-export declare class RethrownError extends ExtendedError {
+export declare class APIError extends ExtendedError {
     original: Error;
     newStack: string;
     constructor(message: string, error: Error);
