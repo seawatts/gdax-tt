@@ -23,20 +23,21 @@ import { ExchangeAuthConfig } from './AuthConfig';
  * @param meta
  * @returns {Promise<Response>}
  */
-export function handleResponse<T>(req: Promise<Response>, meta: any): Promise<T> {
-    return req.then<T>((res: Response) => {
+export async function handleResponse<T>(req: Promise<Response>, meta: any): Promise<T> {
+    try {
+        const res: Response = await req;
         if (res.status >= 200 && res.status < 300) {
-            return Promise.resolve<T>(res.body as T);
+            return res.body;
         }
         const err: any = new Error(res.body.message);
         err.details = res.body;
-        return Promise.reject(err);
-    }).catch((err) => {
-        const reason: any = err.response.body;
-        const error: any = Object.assign(new Error('An API request failed. ' + reason.message), meta);
+        throw err;
+    } catch (err) {
+        const reason: any = err.details.message;
+        const error: any = Object.assign(new Error('An API request failed. ' + reason), meta);
         error.reason = reason;
-        return Promise.reject(error);
-    });
+        return error;
+    }
 }
 
 export function getSignature(auth: ExchangeAuthConfig, payload: string, algorithm: string = 'sha256'): string {
