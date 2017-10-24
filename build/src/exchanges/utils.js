@@ -70,7 +70,7 @@ function handleResponse(req, meta) {
         catch (err) {
             err.meta = meta;
             const reason = err.response.body.message;
-            throw new RethrownError(`An API request failed. HTTP ${err.status} ${reason}`, err);
+            throw new RethrownError(`An API request failed. HTTP: ${err.status} - ${reason}`, err);
         }
     });
 }
